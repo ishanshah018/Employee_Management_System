@@ -1,0 +1,80 @@
+-- SQLite
+CREATE TABLE Employee (
+    emp_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    password TEXT NOT NULL,
+    age INTEGER,
+    gender TEXT,
+    address TEXT,
+    department TEXT,
+    position TEXT,
+    salary REAL,
+    email TEXT UNIQUE,
+    contactnumber TEXT UNIQUE,
+    joining_date DATE,
+    degree TEXT
+);
+
+CREATE TABLE Leaves (
+    leave_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    emp_id INTEGER,
+    leavetype TEXT,
+    startdate DATE,
+    enddate DATE,
+    status TEXT,
+    FOREIGN KEY (emp_id) REFERENCES Employee (emp_id)
+);
+
+CREATE TABLE Job_posting (
+    posting_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    department TEXT,
+    position TEXT,
+    no_of_positions INTEGER,
+
+);
+
+CREATE TABLE Job_Position_Change_Request (
+    jpcr_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    emp_id INTEGER,
+    department TEXT,
+    old_position TEXT,
+    new_position TEXT,
+    status TEXT,
+    FOREIGN KEY (emp_id) REFERENCES Employee (emp_id)
+);
+
+CREATE TABLE HR (
+    hr_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    email TEXT UNIQUE,
+    password TEXT NOT NULL,
+    contactnumber TEXT UNIQUE,
+    salary REAL,
+    degree TEXT
+);
+
+CREATE TABLE Employee_performance (
+    ep_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    employee_id INTEGER,
+    ratedbyhr_name TEXT,
+    rating INTEGER,
+    comments TEXT,
+    FOREIGN KEY (employee_id) REFERENCES Employee (emp_id)
+);
+
+CREATE TABLE Employee_Attendance (
+    atd_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    emp_id INTEGER,
+    date DATE,
+    check_in_time TIME,
+    check_out_time TIME,
+    total_work_hours REAL,
+    type TEXT,
+    FOREIGN KEY (emp_id) REFERENCES Employee (emp_id)
+);
+
+CREATE TABLE Manager (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    password TEXT NOT NULL
+);
