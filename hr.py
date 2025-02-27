@@ -78,7 +78,6 @@ class HR:
         conn = sqlite3.connect(self.db)
         cursor = conn.cursor()
 
-        # Fixed departments and positions
         departments = {
             "IT": ["Software Engineer", "Data Analyst", "System Admin", "Backend Developer", "QA Engineer"],
             "Finance": ["Accountant", "Financial Analyst", "Auditor", "Finance Manager"],
@@ -87,43 +86,89 @@ class HR:
         }
 
         print(colored("\nAdd New Employee", "cyan", attrs=['bold']))
-        name = input("Enter Name: ").strip()
-        password = input("Enter Password: ").strip()
-        age = input("Enter Age: ").strip()
-        gender = input("Enter Gender (Male/Female): ").strip()
+
+        # Name validation: at least 5 letters, no digits or special characters
+        while True:
+            name = input("Enter Name : ").strip()
+            if len(name) >= 5 and all(char.isalpha() or char.isspace() for char in name):
+                break
+            print(colored("Invalid Name! Please enter at least 5 characters with only letters and spaces.", "red"))
+
+
+        # Password validation: at least 4 characters
+        while True:
+            password = input("Enter Password : ").strip()
+            if len(password) >= 4:
+                break
+            print(colored("Invalid Password! Please enter at least 4 characters.", "red"))
+
+        # Age validation: numeric only
+        while True:
+            age = input("Enter Age : ").strip()
+            if age.isdigit() and int(age) > 0:
+                break
+            print(colored("Invalid Age! Please enter a positive number.", "red"))
+
+        # Gender validation: Male/Female only
+        while True:
+            gender = input("Enter Gender (Male/Female): ").strip().capitalize()
+            if gender in ["Male", "Female"]:
+                break
+            print(colored("Invalid Gender! Please enter Male or Female.", "red"))
+
+        # Address (no validation)
         address = input("Enter Address: ").strip()
 
         # Display departments
         print(colored("\nAvailable Departments:", "green"))
         print(tabulate([[d] for d in departments.keys()], headers=["Department"], tablefmt="double_grid"))
 
-        department = input("\nSelect a Department: ").strip()
-        if department not in departments:
-            print(colored("\nInvalid Department! Please select from the available options.", "red"))
-            conn.close()
-            return
+        # Department validation
+        while True:
+            department = input("\nSelect a Department: ").strip()
+            if department in departments:
+                break
+            print(colored("Invalid Department! Please select from the available options.", "red"))
 
-        # Display positions based on chosen department
+        # Display positions
         print(colored(f"\nAvailable Positions in {department}:", "cyan"))
         print(tabulate([[p] for p in departments[department]], headers=["Position"], tablefmt="double_grid"))
 
-        position = input("\nSelect a Position: ").strip()
-        if position not in departments[department]:
-            print(colored("\nInvalid Position! Please select from the available options.", "red"))
-            conn.close()
-            return
+        # Position validation
+        while True:
+            position = input("\nSelect a Position: ").strip()
+            if position in departments[department]:
+                break
+            print(colored("Invalid Position! Please select from the available options.", "red"))
 
-        salary = input("Enter Salary: ").strip()
-        if not salary.isdigit() or int(salary) <= 0:
-            print(colored("\nInvalid Salary! Please enter a positive number.", "red"))
-            conn.close()
-            return
+        # Salary validation: positive number only
+        while True:
+            salary = input("Enter Salary (positive number): ").strip()
+            if salary.isdigit() and int(salary) > 0:
+                break
+            print(colored("Invalid Salary! Please enter a positive number.", "red"))
 
-        email = input("Enter Email: ").strip()
-        contactnumber = input("Enter Contact Number: ").strip()
+        # Email validation: must contain "@" and "."
+        while True:
+            email = input("Enter Email: ").strip()
+            if "@" in email and "." in email and email.index("@") < email.index("."):
+                break
+            print(colored("Invalid Email! Please enter a valid email address.", "red"))
+
+        # Contact number validation: exactly 10 digits
+        while True:
+            contactnumber = input("Enter Contact Number (10 digits): ").strip()
+            if contactnumber.isdigit() and len(contactnumber) == 10:
+                break
+            print(colored("Invalid Contact Number! Please enter exactly 10 digits.", "red"))
+
+        # Joining date
         joining_date = str(date.today())
+
+        # Degree input
         degree = input("Enter Degree: ").strip()
 
+        # Database insertion
         try:
             cursor.execute("""
                 INSERT INTO Employee (name, password, age, gender, address, department, position, salary, email, contactnumber, joining_date, degree)
@@ -166,6 +211,7 @@ class HR:
         conn = sqlite3.connect(self.db)
         cursor = conn.cursor()
 
+        # Fetch and display current employees
         cursor.execute("SELECT emp_id, name FROM Employee")
         employees = cursor.fetchall()
 
@@ -177,21 +223,48 @@ class HR:
         print(colored("\nCurrent Employees:", "green"))
         print(tabulate(employees, headers=["Employee ID", "Name"], tablefmt="double_grid"))
 
-        emp_id = input("\nEnter the Employee ID to update: ").strip()
-        cursor.execute("SELECT * FROM Employee WHERE emp_id = ?", (emp_id,))
-        if not cursor.fetchone():
-            print(colored("\nInvalid Employee ID!", "red"))
-            conn.close()
-            return
+        # Keep asking for valid emp_id until found
+        while True:
+            emp_id = input("\nEnter the Employee ID to update: ").strip()
+            cursor.execute("SELECT * FROM Employee WHERE emp_id = ?", (emp_id,))
+            if cursor.fetchone():
+                break
+            print(colored("Invalid Employee ID! Please enter a valid one.", "red"))
 
         print(colored("\nUpdate Employee Details (Leave blank to skip):", "cyan"))
 
-        password = input("Enter new Password: ").strip()
-        age = input("Enter new Age: ").strip()
-        email = input("Enter new Email: ").strip()
-        contactnumber = input("Enter new Contact Number: ").strip()
+        # Password validation: at least 4 characters or empty to skip
+        while True:
+            password = input("Enter new Password (at least 4 characters): ").strip()
+            if not password or len(password) >= 4:
+                break
+            print(colored("Invalid Password! Please enter at least 4 characters.", "red"))
+
+        # Age validation: numeric only or empty to skip
+        while True:
+            age = input("Enter new Age (numeric only): ").strip()
+            if not age or (age.isdigit() and int(age) > 0):
+                break
+            print(colored("Invalid Age! Please enter a positive number.", "red"))
+
+        # Email validation: must contain '@' and '.' or empty to skip
+        while True:
+            email = input("Enter new Email: ").strip()
+            if not email or ("@" in email and "." in email and email.index("@") < email.index(".")):
+                break
+            print(colored("Invalid Email! Please enter a valid email address.", "red"))
+
+        # Contact number validation: exactly 10 digits or empty to skip
+        while True:
+            contactnumber = input("Enter new Contact Number (10 digits): ").strip()
+            if not contactnumber or (contactnumber.isdigit() and len(contactnumber) == 10):
+                break
+            print(colored("Invalid Contact Number! Please enter exactly 10 digits.", "red"))
+
+        # Degree: no strict validation, allow skip
         degree = input("Enter new Degree: ").strip()
 
+        # Collect updates
         updates = {}
         if password: updates["password"] = password
         if age: updates["age"] = age
@@ -199,12 +272,16 @@ class HR:
         if contactnumber: updates["contactnumber"] = contactnumber
         if degree: updates["degree"] = degree
 
+        # Update query
         if updates:
             query = "UPDATE Employee SET " + ", ".join(f"{col} = ?" for col in updates.keys()) + " WHERE emp_id = ?"
             values = list(updates.values()) + [emp_id]
-            cursor.execute(query, values)
-            conn.commit()
-            print(colored("\nEmployee details updated successfully!", "green"))
+            try:
+                cursor.execute(query, values)
+                conn.commit()
+                print(colored("\nEmployee details updated successfully!", "green"))
+            except sqlite3.IntegrityError:
+                print(colored("\nError: Email or contact number already exists!", "red"))
         else:
             print(colored("\nNo updates made.", "yellow"))
 
