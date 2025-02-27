@@ -32,7 +32,7 @@ class HR:
         else:
             print(colored("\nInvalid HR ID or Password. Please try again.", "red", attrs=['bold']))
             return None
-
+# -----------------------------------------------------------------------------------------------------------------------------------
     def show_menu(self):
         options = [
             ["1", "Manage Employees"],
@@ -46,8 +46,33 @@ class HR:
         ]
         print(colored("\nHR Menu", "green", attrs=['bold']))
         print(tabulate(options, headers=[colored("Option", "cyan"), colored("Action", "yellow")], tablefmt="double_grid"))
-
+# -----------------------------------------------------------------------------------------------------------------------------------
     # --------- Manage Employees --------- #
+
+    def manage_employees(self):
+        options = [
+            ["1", "Add Employee"],
+            ["2", "Delete Employee"],
+            ["3", "Update Employee"],
+            ["4", "Search Employee"],
+            ["5", "Back to Main Menu"]
+        ]
+        print(colored("\nManage Employees", "green", attrs=['bold']))
+        print(tabulate(options, headers=[colored("Option", "cyan"), colored("Action", "yellow")], tablefmt="double_grid"))
+
+        choice = input("Enter your choice: ").strip()
+        if choice == "1":
+            self.add_employee()
+        elif choice == "2":
+            self.delete_employee()
+        elif choice == "3":
+            self.update_employee()
+        elif choice == "4":
+            self.search_employee()
+        elif choice == "5":
+            return
+        else:
+            print(colored("\nInvalid choice!", "red"))
 
     def add_employee(self):
         conn = sqlite3.connect(self.db)
@@ -213,59 +238,35 @@ class HR:
         conn.close()
 
 
-    def manage_employees(self):
-        options = [
-            ["1", "Add Employee"],
-            ["2", "Delete Employee"],
-            ["3", "Update Employee"],
-            ["4", "Search Employee"],
-            ["5", "Back to Main Menu"]
-        ]
-        print(colored("\nManage Employees", "green", attrs=['bold']))
-        print(tabulate(options, headers=[colored("Option", "cyan"), colored("Action", "yellow")], tablefmt="double_grid"))
 
-        choice = input("Enter your choice: ").strip()
-        if choice == "1":
-            self.add_employee()
-        elif choice == "2":
-            self.delete_employee()
-        elif choice == "3":
-            self.update_employee()
-        elif choice == "4":
-            self.search_employee()
-        elif choice == "5":
-            return
-        else:
-            print(colored("\nInvalid choice!", "red"))
+# -----------------------------------------------------------------------------------------------------------------------------------
 
     # --------- Manage Leaves of Employees --------- #
 
     def manage_leaves(self):
         options = [
-            ["1", "View Pending Leaves"],
-            ["2", "Approve/Reject Leave Requests"],
-            ["3", "View Leave History"],
-            ["4", "Back to Main Menu"]
+            ["1", "Approve/Reject Leave Requests"],
+            ["2", "View Leave History"],
+            ["3", "Back to Main Menu"]
         ]
         print(colored("\nManage Leaves of Employees", "green", attrs=['bold']))
         print(tabulate(options, headers=[colored("Option", "cyan"), colored("Action", "yellow")], tablefmt="double_grid"))
 
         choice = input("Enter your choice: ").strip()
         if choice == "1":
-            self.view_pending_leaves()
-        elif choice == "2":
             self.approve_or_reject_leave()
-        elif choice == "3":
+        elif choice == "2":
             self.view_leave_history()
-        elif choice == "4":
+        elif choice == "3":
             return
         else:
             print(colored("\nInvalid choice!", "red"))
 
-    def view_pending_leaves(self):
+    def approve_or_reject_leave(self):
         conn = sqlite3.connect(self.db)
         cursor = conn.cursor()
 
+        # Show pending leaves
         cursor.execute("""
             SELECT L.leave_id, E.name, L.leavetype, L.startdate, L.enddate, L.status
             FROM Leaves L
@@ -274,28 +275,23 @@ class HR:
         """)
         pending_leaves = cursor.fetchall()
 
-        if pending_leaves:
-            print(colored("\nPending Leave Requests:", "green"))
-            print(tabulate(pending_leaves, headers=["Leave ID", "Employee Name", "Leave Type", "Start Date", "End Date", "Status"], tablefmt="double_grid"))
-        else:
+        if not pending_leaves:
             print(colored("\nNo pending leave requests.", "red"))
+            conn.close()
+            return  # Exit if no pending leaves
 
-        conn.close()
+        print(colored("\nPending Leave Requests:", "green"))
+        print(tabulate(pending_leaves, headers=["Leave ID", "Employee Name", "Leave Type", "Start Date", "End Date", "Status"], tablefmt="double_grid"))
 
-    def approve_or_reject_leave(self):
-        conn = sqlite3.connect(self.db)
-        cursor = conn.cursor()
-
-        self.view_pending_leaves()
+        # Get Leave ID
         leave_id = input("\nEnter the Leave ID to process: ").strip()
-
-        # Check if the leave ID is valid and pending
         cursor.execute("SELECT leave_id FROM Leaves WHERE leave_id = ? AND status = 'PENDING'", (leave_id,))
         if not cursor.fetchone():
             print(colored("\nInvalid Leave ID or Leave is not pending.", "red"))
             conn.close()
             return
 
+        # Approve or Reject
         decision = input("Approve or Reject the leave? (A/R): ").strip().upper()
         if decision not in ["A", "R"]:
             print(colored("\nInvalid choice! Enter 'A' for Approve or 'R' for Reject.", "red"))
@@ -313,8 +309,28 @@ class HR:
         conn = sqlite3.connect(self.db)
         cursor = conn.cursor()
 
+        # Display available employees with IDs
+        cursor.execute("SELECT emp_id, name FROM Employee")
+        employees = cursor.fetchall()
+
+        if not employees:
+            print(colored("\nNo employees found.", "red"))
+            conn.close()
+            return
+
+        print(colored("\nAvailable Employees:", "cyan"))
+        print(tabulate(employees, headers=["Employee ID", "Name"], tablefmt="double_grid"))
+
+        # Get valid Employee ID
+        emp_ids = [str(emp[0]) for emp in employees]
         emp_id = input("\nEnter Employee ID to view leave history: ").strip()
 
+        if emp_id not in emp_ids:
+            print(colored("\nInvalid Employee ID! Please select from the list above.", "red"))
+            conn.close()
+            return
+
+        # Fetch leave history
         cursor.execute("""
             SELECT L.leave_id, E.name, L.leavetype, L.startdate, L.enddate, L.status
             FROM Leaves L
@@ -323,13 +339,13 @@ class HR:
         """, (emp_id,))
         leave_history = cursor.fetchall()
 
+        # Display leave history
         if leave_history:
             print(colored(f"\nLeave History for Employee ID {emp_id}:", "green"))
             print(tabulate(leave_history, headers=["Leave ID", "Employee Name", "Leave Type", "Start Date", "End Date", "Status"], tablefmt="double_grid"))
 
-            # Ask if HR wants to save to file
-            save_to_file = input("\nWould you like to save this report to a file? (yes/no): ").strip().lower()
-            if save_to_file == "yes":
+            # Option to save to file
+            if input("\nWould you like to save this report to a file? (yes/no): ").strip().lower() == "yes":
                 filename = f"Leave_History_EmpID_{emp_id}.txt"
                 with open(filename, "w") as file:
                     file.write(f"Leave History for Employee ID {emp_id}\n\n")
@@ -340,6 +356,7 @@ class HR:
 
         conn.close()
 
+# -----------------------------------------------------------------------------------------------------------------------------------
 
         # --------- Manage Salary of Employees --------- #
 
@@ -485,6 +502,7 @@ class HR:
         plt.show()
 
         conn.close()
+# -----------------------------------------------------------------------------------------------------------------------------------
 
         # --------- Job Posting --------- #
 
@@ -532,6 +550,7 @@ class HR:
         conn.close()
 
         print(colored("\nJob posting added successfully!", "green"))
+# -----------------------------------------------------------------------------------------------------------------------------------
 
         # --------- Employee Rating --------- #
 
@@ -577,32 +596,45 @@ class HR:
         conn.close()
 
         print(colored("\nEmployee rating submitted successfully!", "green"))
+# -----------------------------------------------------------------------------------------------------------------------------------
 
     def employee_attendance_report(self):
         conn = sqlite3.connect(self.db)
         cursor = conn.cursor()
 
-        # Fetch total work hours grouped by emp_id
-        cursor.execute("""
-            SELECT emp_id, SUM(total_work_hours)
-            FROM Employee_Attendance
-            GROUP BY emp_id
-        """)
-        attendance_data = cursor.fetchall()
+        # Ask for the date to filter attendance records
+        while True:
+            date = input("\nEnter the date to view attendance (YYYY-MM-DD): ").strip()
+            if not date:
+                print(colored("\nDate cannot be empty. Please enter a valid date.", "red"))
+                continue
+            
+            # Check if records exist for the entered date
+            cursor.execute("""
+                SELECT emp_id, SUM(total_work_hours)
+                FROM Employee_Attendance
+                WHERE date = ?
+                GROUP BY emp_id
+            """, (date,))
+            attendance_data = cursor.fetchall()
 
-        if not attendance_data:
-            print(colored("\nNo attendance data found.", "red"))
-            conn.close()
-            return
+            if attendance_data:
+                break
+            else:
+                print(colored(f"\nNo attendance data found for {date}. Please enter a valid date.", "red"))
 
-        # Extract employee IDs and work hours
+        # Display attendance data in a table
+        print(colored(f"\nEmployee Attendance Report for {date}:", "green"))
+        print(tabulate(attendance_data, headers=["Employee ID", "Total Working Hours"], tablefmt="double_grid"))
+
+        # Extract employee IDs and work hours for plotting
         emp_ids = [str(row[0]) for row in attendance_data]
         work_hours = [row[1] for row in attendance_data]
 
         # Plotting the bar chart
         plt.figure(figsize=(10, 6))
         plt.bar(emp_ids, work_hours, color='skyblue')
-        plt.title('Employee Attendance Report')
+        plt.title(f'Employee Attendance Report - {date}')
         plt.xlabel('Employee ID')
         plt.ylabel('Total Working Hours')
         plt.xticks(rotation=45)
@@ -610,6 +642,7 @@ class HR:
         plt.show()
 
         conn.close()
+# -----------------------------------------------------------------------------------------------------------------------------------
 
     def run(self):
         while True:

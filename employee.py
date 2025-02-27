@@ -30,6 +30,7 @@ class Employee:
         else:
             print(colored("\nInvalid Employee ID or Password. Please try again.", "red", attrs=['bold']))
             return None
+# -----------------------------------------------------------------------------------------------------------------------------------
 
     def show_menu(self):
         options = [
@@ -43,6 +44,7 @@ class Employee:
         ]
         print(colored("\nEmployee Menu", "green", attrs=['bold']))
         print(tabulate(options, headers=[colored("Option", "cyan"), colored("Action", "yellow")], tablefmt="double_grid"))
+# -----------------------------------------------------------------------------------------------------------------------------------
 
     def mark_attendance(self):
         conn = sqlite3.connect(self.db)
@@ -90,6 +92,7 @@ class Employee:
             print(colored("\nInvalid choice!", "red"))
 
         conn.close()
+# -----------------------------------------------------------------------------------------------------------------------------------
 
     def apply_leave(self):
         conn = sqlite3.connect(self.db)
@@ -120,6 +123,7 @@ class Employee:
         conn.close()
 
         print(colored("\nLeave request submitted successfully! Status: PENDING", "green"))
+# -----------------------------------------------------------------------------------------------------------------------------------
 
     def view_applied_leaves(self):
         conn = sqlite3.connect(self.db)
@@ -135,6 +139,7 @@ class Employee:
             print(colored("\nNo applied leaves found.", "red"))
 
         conn.close()
+# -----------------------------------------------------------------------------------------------------------------------------------
 
     def check_salary(self):
         conn = sqlite3.connect(self.db)
@@ -149,6 +154,7 @@ class Employee:
             print(colored("\nSalary details not found.", "red"))
 
         conn.close()
+# -----------------------------------------------------------------------------------------------------------------------------------
 
     def request_job_position_change(self):
         conn = sqlite3.connect(self.db)
@@ -193,6 +199,7 @@ class Employee:
         conn.close()
 
         print(colored("\nJob Position Change Request Submitted Successfully! Status: PENDING", "green"))
+# -----------------------------------------------------------------------------------------------------------------------------------
 
     def view_and_update_profile(self):
         conn = sqlite3.connect(self.db)
@@ -240,7 +247,8 @@ class Employee:
             print(colored("\nNo changes made to your profile.", "yellow"))
 
         conn.close()
-
+# -----------------------------------------------------------------------------------------------------------------------------------
+    
     def run(self):
         while True:
             self.show_menu()

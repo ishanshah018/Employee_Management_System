@@ -3,6 +3,8 @@ import os
 from tabulate import tabulate
 from termcolor import colored
 from datetime import datetime, date
+import matplotlib.pyplot as plt
+
 
 class Manager:
     def __init__(self, id, name):
@@ -30,6 +32,7 @@ class Manager:
         else:
             print(colored("\nInvalid Manager ID or Password. Please try again.", "red", attrs=['bold']))
             return None
+# -----------------------------------------------------------------------------------------------------------------------------------
 
     def run(self):
         while True:
@@ -45,6 +48,7 @@ class Manager:
                 break
             else:
                 print(colored("\nInvalid choice! Please try again.", "red"))
+# -----------------------------------------------------------------------------------------------------------------------------------
 
     def show_main_menu(self):
         options = [
@@ -54,6 +58,7 @@ class Manager:
         ]
         print(colored("\nManager Dashboard", "green", attrs=['bold']))
         print(tabulate(options, headers=[colored("Option", "cyan"), colored("Action", "yellow")], tablefmt="double_grid"))
+# -----------------------------------------------------------------------------------------------------------------------------------
     
     def manage_hrs(self):
         while True:
@@ -78,6 +83,7 @@ class Manager:
             else:
                 print(colored("\nInvalid choice! Please try again.", "red"))
 
+# -----------------------------------------------------------------------------------------------------------------------------------
 
     def add_hr(self):
         conn = sqlite3.connect(self.db)
@@ -86,50 +92,47 @@ class Manager:
         print(colored("\nAdd HR", "cyan"))
 
         # Name input validation
-        name = input("Enter HR Name: ").strip()
-        if not name.replace(" ", "").isalpha():
+        while True:
+            name = input("Enter HR Name: ").strip()
+            if name.replace(" ", "").isalpha():
+                break
             print(colored("\nInvalid name! Name should only contain letters.", "red"))
-            conn.close()
-            return
 
         # Email validation
-        email = input("Enter Email: ").strip()
-        if "@" not in email or "." not in email.split("@")[-1]:
+        while True:
+            email = input("Enter Email: ").strip()
+            if "@" in email and "." in email.split("@")[-1]:
+                break
             print(colored("\nInvalid email! Please enter a valid email address.", "red"))
-            conn.close()
-            return
 
         # Password input
-        password = input("Enter Password: ").strip()
-        if len(password) < 4:
+        while True:
+            password = input("Enter Password: ").strip()
+            if len(password) >= 4:
+                break
             print(colored("\nPassword too short! Must be at least 4 characters.", "red"))
-            conn.close()
-            return
 
         # Contact number validation (only 10 digits)
-        contactnumber = input("Enter Contact Number: ").strip()
-        if not contactnumber.isdigit() or len(contactnumber) != 10:
+        while True:
+            contactnumber = input("Enter Contact Number: ").strip()
+            if contactnumber.isdigit() and len(contactnumber) == 10:
+                break
             print(colored("\nInvalid contact number! Must be exactly 10 digits.", "red"))
-            conn.close()
-            return
 
         # Salary validation (should be a number)
-        salary = input("Enter Salary: ").strip()
-        if not salary.isdigit():
+        while True:
+            salary = input("Enter Salary: ").strip()
+            if salary.isdigit():
+                salary = int(salary)
+                break
             print(colored("\nInvalid salary! Salary must be a numeric value.", "red"))
-            conn.close()
-            return
 
-        # Degree validation (should only contain letters)
+        # Degree input without validation
         degree = input("Enter Degree: ").strip()
-        if not degree.replace(" ", "").isalpha():
-            print(colored("\nInvalid degree! Degree should only contain letters.", "red"))
-            conn.close()
-            return
 
         # Insert data into HR table
         cursor.execute("INSERT INTO HR (name, email, password, contactnumber, salary, degree) VALUES (?, ?, ?, ?, ?, ?)",
-                    (name, email, password, contactnumber, int(salary), degree))
+                    (name, email, password, contactnumber, salary, degree))
         conn.commit()
         conn.close()
 
@@ -195,7 +198,13 @@ class Manager:
         print(colored("\nHR List:", "cyan"))
         print(tabulate(hrs, headers=["HR ID", "Name"], tablefmt="double_grid"))
 
-        hr_id = input("\nEnter HR ID to update: ").strip()
+        # Get HR ID
+        hr_id = input("\nEnter HR ID to update (or 'skip' to cancel): ").strip()
+        if hr_id.lower() == "skip":
+            print(colored("\nNo changes made.", "yellow"))
+            conn.close()
+            return
+
         if not hr_id.isdigit():
             print(colored("\nInvalid HR ID! Must be a numeric value.", "red"))
             conn.close()
@@ -207,73 +216,78 @@ class Manager:
             conn.close()
             return
 
-        updates = {}
+        # Collect updates
+        email = input("Enter new Email (or 'skip' to keep unchanged): ").strip()
+        contact = input("Enter new Contact Number (or 'skip' to keep unchanged): ").strip()
+        salary = input("Enter new Salary (or 'skip' to keep unchanged): ").strip()
+        degree = input("Enter new Degree (or 'skip' to keep unchanged): ").strip()
 
-        new_name = input("Enter new Name (Press Enter to skip): ").strip()
-        if new_name and any(char.isdigit() for char in new_name):
-            print(colored("\nInvalid Name! It should not contain numbers.", "red"))
-        elif new_name:
-            updates["name"] = new_name
+        # Prepare updates
+        updates = []
+        values = []
 
-        new_email = input("Enter new Email (Press Enter to skip): ").strip()
-        if new_email and "@" not in new_email:
-            print(colored("\nInvalid Email! It must contain '@'.", "red"))
-        elif new_email:
-            updates["email"] = new_email
+        if email.lower() != "skip":
+            if "@" in email and "." in email.split("@")[-1]:
+                updates.append("email = ?")
+                values.append(email)
+            else:
+                print(colored("\nInvalid Email! Skipping email update.", "yellow"))
 
-        new_contact = input("Enter new Contact Number (Press Enter to skip): ").strip()
-        if new_contact and (not new_contact.isdigit() or len(new_contact) != 10):
-            print(colored("\nInvalid Contact Number! It must be a 10-digit number.", "red"))
-        elif new_contact:
-            updates["contactnumber"] = new_contact
+        if contact.lower() != "skip":
+            if contact.isdigit() and len(contact) == 10:
+                updates.append("contactnumber = ?")
+                values.append(contact)
+            else:
+                print(colored("\nInvalid Contact Number! Skipping contact update.", "yellow"))
 
-        new_salary = input("Enter new Salary (Press Enter to skip): ").strip()
-        if new_salary and not new_salary.isdigit():
-            print(colored("\nInvalid Salary! It must be a numeric value.", "red"))
-        elif new_salary:
-            updates["salary"] = new_salary
+        if salary.lower() != "skip":
+            if salary.isdigit():
+                updates.append("salary = ?")
+                values.append(int(salary))
+            else:
+                print(colored("\nInvalid Salary! Skipping salary update.", "yellow"))
 
-        new_degree = input("Enter new Degree (Press Enter to skip): ").strip()
-        if new_degree and any(char.isdigit() for char in new_degree):
-            print(colored("\nInvalid Degree! It should not contain numbers.", "red"))
-        elif new_degree:
-            updates["degree"] = new_degree
+        if degree.lower() != "skip":
+            updates.append("degree = ?")
+            values.append(degree)
 
+        # Update if any changes
         if updates:
-            query = "UPDATE HR SET " + ", ".join(f"{col} = ?" for col in updates.keys()) + " WHERE hr_id = ?"
-            values = list(updates.values()) + [hr_id]
+            query = f"UPDATE HR SET {', '.join(updates)} WHERE hr_id = ?"
+            values.append(hr_id)
             cursor.execute(query, values)
             conn.commit()
             print(colored("\nHR details updated successfully!", "green"))
         else:
-            print(colored("\nNo valid changes made.", "yellow"))
+            print(colored("\nNo changes made.", "yellow"))
 
         conn.close()
 
     
+# -----------------------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------------------
 
     def manage_employees(self):
         while True:
             options = [
                 ["1", "Manage Employee Leaves"],
-                ["2", "Manage Company Accounts"],
+                ["2", "Manage Company Accounts Passwords"],
                 ["3", "View Employee Performance"],
                 ["4", "Remove an Employee"],
                 ["5", "Generate Salary Report (Employees & HRs)"],
                 ["6", "Manage Employee Position Change Requests"],
-                ["7", "Approve Promotions (Salary/Position Changes)"],
-                ["8", "View Employee Attendance"],
-                ["9", "Employee Attendance Analytics (Graph)"],
-                ["10", "Back to Main Menu"]
+                ["7", "To Give Promotion [Increase Salary of Employees/HR]"],
+                ["8", "View Employee Attendance Report"],
+                ["9", "Back to Main Menu"]
             ]
             print(colored("\nManage Employees", "cyan", attrs=['bold']))
             print(tabulate(options, headers=[colored("Option", "cyan"), colored("Action", "yellow")], tablefmt="double_grid"))
             
             choice = input("Enter your choice: ").strip()
             if choice == "1":
-                self.manage_employee_leaves()
+                self.manage_leaves()
             elif choice == "2":
-                self.manage_company_accounts()
+                self.manage_company_passwords()
             elif choice == "3":
                 self.view_employee_performance()
             elif choice == "4":
@@ -283,62 +297,39 @@ class Manager:
             elif choice == "6":
                 self.manage_position_change_requests()
             elif choice == "7":
-                self.approve_promotions()
+                self.promote_employee_or_hr()
             elif choice == "8":
-                self.view_employee_attendance()
+                self.employee_attendance_report()
             elif choice == "9":
-                self.employee_attendance_analytics()
-            elif choice == "10":
                 break
             else:
                 print(colored("\nInvalid choice or functionality not implemented yet!", "red"))
+# -----------------------------------------------------------------------------------------------------------------------------------
 
-    def manage_employee_leaves(self):
-        while True:
-            options = [
-                ["1", "Check Leaves of Each Employee"],
-                ["2", "Approve/Reject Leave Requests"],
-                ["3", "Back to Employee Management"]
-            ]
-            print(colored("\nManage Employee Leaves", "cyan", attrs=['bold']))
-            print(tabulate(options, headers=[colored("Option", "cyan"), colored("Action", "yellow")], tablefmt="double_grid"))
-            
-            choice = input("Enter your choice: ").strip()
-            if choice == "1":
-                self.view_leave_history()
-            elif choice == "2":
-                self.approve_or_reject_leave()
-            elif choice == "3":
-                break
-            else:
-                print(colored("\nInvalid choice or functionality not implemented yet!", "red"))
+    def manage_leaves(self):
+        options = [
+            ["1", "Approve/Reject Leave Requests"],
+            ["2", "View Leave History"],
+            ["3", "Back to Main Menu"]
+        ]
+        print(colored("\nManage Leaves of Employees", "green", attrs=['bold']))
+        print(tabulate(options, headers=[colored("Option", "cyan"), colored("Action", "yellow")], tablefmt="double_grid"))
 
-    def view_leave_history(self):
-        conn = sqlite3.connect(self.db)
-        cursor = conn.cursor()
-
-        emp_id = input("\nEnter Employee ID to view leave history: ").strip()
-
-        cursor.execute("""
-            SELECT L.leave_id, E.name, L.leavetype, L.startdate, L.enddate, L.status
-            FROM Leaves L
-            JOIN Employee E ON L.emp_id = E.emp_id
-            WHERE L.emp_id = ?
-        """, (emp_id,))
-        leave_history = cursor.fetchall()
-
-        if leave_history:
-            print(colored(f"\nLeave History for Employee ID {emp_id}:", "green"))
-            print(tabulate(leave_history, headers=["Leave ID", "Employee Name", "Leave Type", "Start Date", "End Date", "Status"], tablefmt="double_grid"))
+        choice = input("Enter your choice: ").strip()
+        if choice == "1":
+            self.approve_or_reject_leave()
+        elif choice == "2":
+            self.view_leave_history()
+        elif choice == "3":
+            return
         else:
-            print(colored("\nNo leave history found for the given Employee ID.", "red"))
+            print(colored("\nInvalid choice!", "red"))
 
-        conn.close()
-
-    def view_pending_leaves(self):
+    def approve_or_reject_leave(self):
         conn = sqlite3.connect(self.db)
         cursor = conn.cursor()
 
+        # Show pending leaves
         cursor.execute("""
             SELECT L.leave_id, E.name, L.leavetype, L.startdate, L.enddate, L.status
             FROM Leaves L
@@ -347,28 +338,23 @@ class Manager:
         """)
         pending_leaves = cursor.fetchall()
 
-        if pending_leaves:
-            print(colored("\nPending Leave Requests:", "green"))
-            print(tabulate(pending_leaves, headers=["Leave ID", "Employee Name", "Leave Type", "Start Date", "End Date", "Status"], tablefmt="double_grid"))
-        else:
+        if not pending_leaves:
             print(colored("\nNo pending leave requests.", "red"))
+            conn.close()
+            return  # Exit if no pending leaves
 
-        conn.close()
+        print(colored("\nPending Leave Requests:", "green"))
+        print(tabulate(pending_leaves, headers=["Leave ID", "Employee Name", "Leave Type", "Start Date", "End Date", "Status"], tablefmt="double_grid"))
 
-    def approve_or_reject_leave(self):
-        conn = sqlite3.connect(self.db)
-        cursor = conn.cursor()
-
-        self.view_pending_leaves()
+        # Get Leave ID
         leave_id = input("\nEnter the Leave ID to process: ").strip()
-
-        # Check if the leave ID is valid and pending
         cursor.execute("SELECT leave_id FROM Leaves WHERE leave_id = ? AND status = 'PENDING'", (leave_id,))
         if not cursor.fetchone():
             print(colored("\nInvalid Leave ID or Leave is not pending.", "red"))
             conn.close()
             return
 
+        # Approve or Reject
         decision = input("Approve or Reject the leave? (A/R): ").strip().upper()
         if decision not in ["A", "R"]:
             print(colored("\nInvalid choice! Enter 'A' for Approve or 'R' for Reject.", "red"))
@@ -381,6 +367,147 @@ class Manager:
         print(colored(f"\nLeave request {new_status} successfully!", "green"))
 
         conn.close()
+
+    def view_leave_history(self):
+        conn = sqlite3.connect(self.db)
+        cursor = conn.cursor()
+
+        # Display available employees with IDs
+        cursor.execute("SELECT emp_id, name FROM Employee")
+        employees = cursor.fetchall()
+
+        if not employees:
+            print(colored("\nNo employees found.", "red"))
+            conn.close()
+            return
+
+        print(colored("\nAvailable Employees:", "cyan"))
+        print(tabulate(employees, headers=["Employee ID", "Name"], tablefmt="double_grid"))
+
+        # Get valid Employee ID
+        emp_ids = [str(emp[0]) for emp in employees]
+        emp_id = input("\nEnter Employee ID to view leave history: ").strip()
+
+        if emp_id not in emp_ids:
+            print(colored("\nInvalid Employee ID! Please select from the list above.", "red"))
+            conn.close()
+            return
+
+        # Fetch leave history
+        cursor.execute("""
+            SELECT L.leave_id, E.name, L.leavetype, L.startdate, L.enddate, L.status
+            FROM Leaves L
+            JOIN Employee E ON L.emp_id = E.emp_id
+            WHERE L.emp_id = ?
+        """, (emp_id,))
+        leave_history = cursor.fetchall()
+
+        # Display leave history
+        if leave_history:
+            print(colored(f"\nLeave History for Employee ID {emp_id}:", "green"))
+            print(tabulate(leave_history, headers=["Leave ID", "Employee Name", "Leave Type", "Start Date", "End Date", "Status"], tablefmt="double_grid"))
+
+            # Option to save to file
+            if input("\nWould you like to save this report to a file? (yes/no): ").strip().lower() == "yes":
+                filename = f"Leave_History_EmpID_{emp_id}.txt"
+                with open(filename, "w") as file:
+                    file.write(f"Leave History for Employee ID {emp_id}\n\n")
+                    file.write(tabulate(leave_history, headers=["Leave ID", "Employee Name", "Leave Type", "Start Date", "End Date", "Status"], tablefmt="grid"))
+                print(colored(f"\nLeave history saved to {filename}!", "green"))
+        else:
+            print(colored("\nNo leave history found for the given Employee ID.", "red"))
+
+        conn.close()
+# -----------------------------------------------------------------------------------------------------------------------------------
+
+    def manage_company_passwords(self):
+        conn = sqlite3.connect(self.db)
+        cursor = conn.cursor()
+
+        while True:
+            print(colored("\nManage Company Passwords", "cyan"))
+            print(tabulate([
+                ["1", "Change HR Password"],
+                ["2", "Change Employee Password"],
+                ["3", "Change Own (Manager) Password"],
+                ["4", "Exit"]
+            ], headers=["Option", "Action"], tablefmt="double_grid"))
+
+            choice = input("\nEnter your choice (1-4): ").strip()
+
+            if choice == "1":
+                # Show available HRs
+                cursor.execute("SELECT hr_id, name FROM HR")
+                hrs = cursor.fetchall()
+                print(colored("\nAvailable HRs:", "cyan"))
+                print(tabulate(hrs, headers=["HR ID", "Name"], tablefmt="double_grid"))
+
+                hr_id = input("\nEnter HR ID to change password: ").strip()
+                cursor.execute("SELECT password FROM HR WHERE hr_id = ?", (hr_id,))
+                current_password = cursor.fetchone()
+
+                if current_password:
+                    print(colored(f"\nCurrent HR Password: {current_password[0]}", "yellow"))
+                    while True:
+                        new_password = input("Enter new Password: ").strip()
+                        if len(new_password) >= 4:
+                            cursor.execute("UPDATE HR SET password = ? WHERE hr_id = ?", (new_password, hr_id))
+                            conn.commit()
+                            print(colored("\nHR password updated successfully!", "green"))
+                            break
+                        print(colored("\nPassword too short! Must be at least 4 characters.", "red"))
+                else:
+                    print(colored("\nInvalid HR ID!", "red"))
+
+            elif choice == "2":
+                # Show available Employees
+                cursor.execute("SELECT emp_id, name FROM Employee")
+                emps = cursor.fetchall()
+                print(colored("\nAvailable Employees:", "cyan"))
+                print(tabulate(emps, headers=["Employee ID", "Name"], tablefmt="double_grid"))
+
+                emp_id = input("\nEnter Employee ID to change password: ").strip()
+                cursor.execute("SELECT password FROM Employee WHERE emp_id = ?", (emp_id,))
+                current_password = cursor.fetchone()
+
+                if current_password:
+                    print(colored(f"\nCurrent Employee Password: {current_password[0]}", "yellow"))
+                    while True:
+                        new_password = input("Enter new Password: ").strip()
+                        if len(new_password) >= 4:
+                            cursor.execute("UPDATE Employee SET password = ? WHERE emp_id = ?", (new_password, emp_id))
+                            conn.commit()
+                            print(colored("\nEmployee password updated successfully!", "green"))
+                            break
+                        print(colored("\nPassword too short! Must be at least 4 characters.", "red"))
+                else:
+                    print(colored("\nInvalid Employee ID!", "red"))
+
+            elif choice == "3":
+                # Change Manager password
+                cursor.execute("SELECT password FROM Manager WHERE id = 1")
+                current_password = cursor.fetchone()
+
+                print(colored(f"\nCurrent Manager Password: {current_password[0]}", "yellow"))
+                while True:
+                    new_password = input("Enter new Password: ").strip()
+                    if len(new_password) >= 4:
+                        cursor.execute("UPDATE Manager SET password = ? WHERE id = 1", (new_password,))
+                        conn.commit()
+                        print(colored("\nManager password updated successfully!", "green"))
+                        break
+                    print(colored("\nPassword too short! Must be at least 4 characters.", "red"))
+
+            elif choice == "4":
+                print(colored("\nExiting password management...", "yellow"))
+                break
+
+            else:
+                print(colored("\nInvalid choice! Please enter a number between 1 and 4.", "red"))
+
+        conn.close()
+
+# -----------------------------------------------------------------------------------------------------------------------------------
 
     def view_employee_performance(self):
         conn = sqlite3.connect(self.db)
@@ -399,6 +526,7 @@ class Manager:
             print(colored("\nNo performance records found.", "red"))
 
         conn.close()
+# -----------------------------------------------------------------------------------------------------------------------------------
 
     def remove_employee(self):
         conn = sqlite3.connect(self.db)
@@ -438,6 +566,321 @@ class Manager:
             break
 
         conn.close()
+# -----------------------------------------------------------------------------------------------------------------------------------
+
+    def generate_salary_report(self):
+        conn = sqlite3.connect(self.db)
+        cursor = conn.cursor()
+
+        while True:
+            print(colored("\nGenerate Salary Report", "cyan"))
+            print(tabulate([
+                ["1", "Employee Salary Report"],
+                ["2", "HR Salary Report"],
+                ["3", "Exit"]
+            ], headers=["Option", "Report Type"], tablefmt="double_grid"))
+
+            choice = input("\nEnter your choice (1-3): ").strip()
+
+            if choice == "1":
+                # Employee Salary Report
+                cursor.execute("SELECT DISTINCT department FROM Employee LIMIT 5")
+                departments = cursor.fetchall()
+
+                if not departments:
+                    print(colored("\nNo departments found.", "red"))
+                    continue
+
+                print(colored("\nAvailable Departments:", "green"))
+                print(tabulate(departments, headers=["Department"], tablefmt="double_grid"))
+
+                selected_department = input("\nEnter the department to generate the salary report: ").strip()
+
+                cursor.execute("""
+                    SELECT department, SUM(salary)
+                    FROM Employee
+                    WHERE department = ?
+                    GROUP BY department
+                """, (selected_department,))
+                result = cursor.fetchone()
+
+                if not result:
+                    print(colored(f"\nNo salary data found for department: {selected_department}", "red"))
+                    continue
+
+                # Plotting
+                departments = [result[0]]
+                salaries = [result[1]]
+
+                plt.bar(departments, salaries, color='skyblue')
+                plt.title(f'Salary Report for {selected_department}')
+                plt.xlabel('Department')
+                plt.ylabel('Total Salary (INR)')
+                plt.show()
+
+            elif choice == "2":
+                # HR Salary Report
+                cursor.execute("SELECT hr_id, salary FROM HR")
+                hr_data = cursor.fetchall()
+
+                if not hr_data:
+                    print(colored("\nNo HR salary data found.", "red"))
+                    continue
+
+                print(colored("\nHR Salary Data:", "green"))
+                print(tabulate(hr_data, headers=["HR ID", "Salary (INR)"], tablefmt="double_grid"))
+
+                hr_ids = [str(row[0]) for row in hr_data]
+                salaries = [row[1] for row in hr_data]
+
+                plt.bar(hr_ids, salaries, color='orange')
+                plt.title('HR Salary Report')
+                plt.xlabel('HR ID')
+                plt.ylabel('Salary (INR)')
+                plt.show()
+
+            elif choice == "3":
+                print(colored("\nExiting salary report generation...", "yellow"))
+                break
+
+            else:
+                print(colored("\nInvalid choice! Please enter a number between 1 and 3.", "red"))
+
+        conn.close()
+# -----------------------------------------------------------------------------------------------------------------------------------
+
+    def manage_position_change_requests(self):
+        conn = sqlite3.connect(self.db)
+        cursor = conn.cursor()
+
+        while True:
+            # Fetch pending requests
+            cursor.execute("""
+                SELECT JP.jpcr_id, E.name, JP.department, JP.old_position, JP.new_position, JP.status
+                FROM Job_Position_Change_Request JP
+                JOIN Employee E ON JP.emp_id = E.emp_id
+                WHERE JP.status = 'PENDING'
+            """)
+            pending_requests = cursor.fetchall()
+
+            if not pending_requests:
+                print(colored("\nNo pending position change requests.", "red"))
+                break
+
+            # Display pending requests
+            print(colored("\nPending Position Change Requests:", "green"))
+            print(tabulate(pending_requests, headers=["JPCR ID", "Employee Name", "Department", "Old Position", "New Position", "Status"], tablefmt="double_grid"))
+
+            # Get valid JPCR IDs
+            valid_ids = [str(row[0]) for row in pending_requests]
+
+            # Ask for JPCR ID
+            jpcr_id = input("\nEnter JPCR ID to process (or 'exit' to return): ").strip()
+            if jpcr_id.lower() == "exit":
+                break
+            if jpcr_id not in valid_ids:
+                print(colored("\nInvalid JPCR ID. Please select a valid pending request.", "red"))
+                continue
+
+            # Get request details
+            cursor.execute("""
+                SELECT JP.emp_id, JP.new_position, JP.department
+                FROM Job_Position_Change_Request JP
+                WHERE JP.jpcr_id = ?
+            """, (jpcr_id,))
+            emp_id, new_position, department = cursor.fetchone()
+
+            # Approve or Reject
+            decision = input("Approve or Reject the request? (A/R): ").strip().upper()
+            if decision not in ["A", "R"]:
+                print(colored("\nInvalid choice! Enter 'A' for Approve or 'R' for Reject.", "red"))
+                continue
+
+            if decision == "A":  # Approve
+                # Update Employee position
+                cursor.execute("""
+                    UPDATE Employee
+                    SET position = ?
+                    WHERE emp_id = ?
+                """, (new_position, emp_id))
+
+                # Reduce job posting count
+                cursor.execute("""
+                    UPDATE Job_posting
+                    SET no_of_positions = no_of_positions - 1
+                    WHERE department = ? AND position = ? AND no_of_positions > 0
+                """, (department, new_position))
+
+                if cursor.rowcount == 0:
+                    print(colored("\nNo available positions left for this role. Approval failed.", "red"))
+                    continue
+
+                # Update status to APPROVED
+                cursor.execute("""
+                    UPDATE Job_Position_Change_Request
+                    SET status = 'APPROVED'
+                    WHERE jpcr_id = ?
+                """, (jpcr_id,))
+
+                print(colored("\nPosition change request APPROVED and updated successfully!", "green"))
+
+            else:  # Reject
+                cursor.execute("""
+                    UPDATE Job_Position_Change_Request
+                    SET status = 'REJECTED'
+                    WHERE jpcr_id = ?
+                """, (jpcr_id,))
+
+                print(colored("\nPosition change request REJECTED.", "yellow"))
+
+            conn.commit()
+
+        conn.close()
+# -----------------------------------------------------------------------------------------------------------------------------------
+
+    def promote_employee_or_hr(self):
+        conn = sqlite3.connect(self.db)
+        cursor = conn.cursor()
+
+        while True:
+            print(colored("\nPromotion Menu:", "green"))
+            print("1) Promote HR\n2) Promote Employee\n3) Exit")
+
+            choice = input("\nEnter your choice (1/2/3): ").strip()
+            if choice == "3":
+                break
+            elif choice not in ["1", "2"]:
+                print(colored("\nInvalid choice! Please enter 1, 2, or 3.", "red"))
+                continue
+
+            if choice == "1":  # Promote HR
+                cursor.execute("SELECT hr_id, name, salary FROM HR")
+                hrs = cursor.fetchall()
+
+                if not hrs:
+                    print(colored("\nNo HR available for promotion.", "red"))
+                    continue
+
+                print(colored("\nAvailable HR for Promotion:", "green"))
+                print(tabulate(hrs, headers=["HR ID", "Name", "Current Salary (INR)"], tablefmt="double_grid"))
+
+                hr_ids = [str(hr[0]) for hr in hrs]
+                hr_id = input("\nEnter HR ID to promote: ").strip()
+                if hr_id not in hr_ids:
+                    print(colored("\nInvalid HR ID. Please select from the list.", "red"))
+                    continue
+
+                current_salary = next(hr[2] for hr in hrs if str(hr[0]) == hr_id)
+                print(colored(f"\nCurrent Salary for HR ID {hr_id}: INR {current_salary}", "yellow"))
+
+                while True:
+                    new_salary = input("Enter new salary (must be higher than current salary): ").strip()
+                    if not new_salary:
+                        print(colored("\nSalary cannot be empty. Please enter a value.", "red"))
+                        continue
+
+                    try:
+                        new_salary = float(new_salary)
+                        if new_salary <= current_salary:
+                            print(colored("\nNew salary must be greater than the current salary!", "red"))
+                            continue
+
+                        cursor.execute("UPDATE HR SET salary = ? WHERE hr_id = ?", (new_salary, hr_id))
+                        conn.commit()
+                        print(colored("\nHR salary updated successfully!", "green"))
+                        break
+                    except ValueError:
+                        print(colored("\nInvalid salary amount. Please enter a valid number.", "red"))
+
+            elif choice == "2":  # Promote Employee
+                cursor.execute("SELECT emp_id, name, department, position, salary FROM Employee")
+                employees = cursor.fetchall()
+
+                if not employees:
+                    print(colored("\nNo employees available for promotion.", "red"))
+                    continue
+
+                print(colored("\nAvailable Employees for Promotion:", "green"))
+                print(tabulate(employees, headers=["Emp ID", "Name", "Department", "Position", "Current Salary (INR)"], tablefmt="double_grid"))
+
+                emp_ids = [str(emp[0]) for emp in employees]
+                emp_id = input("\nEnter Employee ID to promote: ").strip()
+                if emp_id not in emp_ids:
+                    print(colored("\nInvalid Employee ID. Please select from the list.", "red"))
+                    continue
+
+                current_salary = next(emp[4] for emp in employees if str(emp[0]) == emp_id)
+                print(colored(f"\nCurrent Salary for Employee ID {emp_id}: INR {current_salary}", "yellow"))
+
+                while True:
+                    new_salary = input("Enter new salary (must be higher than current salary): ").strip()
+                    if not new_salary:
+                        print(colored("\nSalary cannot be empty. Please enter a value.", "red"))
+                        continue
+
+                    try:
+                        new_salary = float(new_salary)
+                        if new_salary <= current_salary:
+                            print(colored("\nNew salary must be greater than the current salary!", "red"))
+                            continue
+
+                        cursor.execute("UPDATE Employee SET salary = ? WHERE emp_id = ?", (new_salary, emp_id))
+                        conn.commit()
+                        print(colored("\nEmployee salary updated successfully!", "green"))
+                        break
+                    except ValueError:
+                        print(colored("\nInvalid salary amount. Please enter a valid number.", "red"))
+
+        conn.close()
+
+# -----------------------------------------------------------------------------------------------------------------------------------
+
+    def employee_attendance_report(self):
+        conn = sqlite3.connect(self.db)
+        cursor = conn.cursor()
+
+        # Ask for the date to filter attendance records
+        while True:
+            date = input("\nEnter the date to view attendance (YYYY-MM-DD): ").strip()
+            if not date:
+                print(colored("\nDate cannot be empty. Please enter a valid date.", "red"))
+                continue
+            
+            # Check if records exist for the entered date
+            cursor.execute("""
+                SELECT emp_id, SUM(total_work_hours)
+                FROM Employee_Attendance
+                WHERE date = ?
+                GROUP BY emp_id
+            """, (date,))
+            attendance_data = cursor.fetchall()
+
+            if attendance_data:
+                break
+            else:
+                print(colored(f"\nNo attendance data found for {date}. Please enter a valid date.", "red"))
+
+        # Display attendance data in a table
+        print(colored(f"\nEmployee Attendance Report for {date}:", "green"))
+        print(tabulate(attendance_data, headers=["Employee ID", "Total Working Hours"], tablefmt="double_grid"))
+
+        # Extract employee IDs and work hours for plotting
+        emp_ids = [str(row[0]) for row in attendance_data]
+        work_hours = [row[1] for row in attendance_data]
+
+        # Plotting the bar chart
+        plt.figure(figsize=(10, 6))
+        plt.bar(emp_ids, work_hours, color='skyblue')
+        plt.title(f'Employee Attendance Report - {date}')
+        plt.xlabel('Employee ID')
+        plt.ylabel('Total Working Hours')
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.show()
+
+        conn.close()
+# -----------------------------------------------------------------------------------------------------------------------------------
+
 
 # Login and menu loop
 while True:
