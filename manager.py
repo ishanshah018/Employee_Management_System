@@ -275,10 +275,9 @@ class Manager:
                 ["3", "View Employee Performance"],
                 ["4", "Remove an Employee"],
                 ["5", "Generate Salary Report (Employees & HRs)"],
-                ["6", "Manage Employee Position Change Requests"],
-                ["7", "To Give Promotion [Increase Salary of Employees/HR]"],
-                ["8", "View Employee Attendance Report"],
-                ["9", "Back to Main Menu"]
+                ["6", "To Give Promotion [Increase Salary of Employees/HR]"],
+                ["7", "View Employee Attendance Report"],
+                ["8", "Back to Main Menu"]
             ]
             print(colored("\nManage Employees", "cyan", attrs=['bold']))
             print(tabulate(options, headers=[colored("Option", "cyan"), colored("Action", "yellow")], tablefmt="double_grid"))
@@ -295,12 +294,10 @@ class Manager:
             elif choice == "5":
                 self.generate_salary_report()
             elif choice == "6":
-                self.manage_position_change_requests()
-            elif choice == "7":
                 self.promote_employee_or_hr()
-            elif choice == "8":
+            elif choice == "7":
                 self.employee_attendance_report()
-            elif choice == "9":
+            elif choice == "8":
                 break
             else:
                 print(colored("\nInvalid choice or functionality not implemented yet!", "red"))
@@ -649,93 +646,6 @@ class Manager:
         conn.close()
 # -----------------------------------------------------------------------------------------------------------------------------------
 
-    def manage_position_change_requests(self):
-        conn = sqlite3.connect(self.db)
-        cursor = conn.cursor()
-
-        while True:
-            # Fetch pending requests
-            cursor.execute("""
-                SELECT JP.jpcr_id, E.name, JP.department, JP.old_position, JP.new_position, JP.status
-                FROM Job_Position_Change_Request JP
-                JOIN Employee E ON JP.emp_id = E.emp_id
-                WHERE JP.status = 'PENDING'
-            """)
-            pending_requests = cursor.fetchall()
-
-            if not pending_requests:
-                print(colored("\nNo pending position change requests.", "red"))
-                break
-
-            # Display pending requests
-            print(colored("\nPending Position Change Requests:", "green"))
-            print(tabulate(pending_requests, headers=["JPCR ID", "Employee Name", "Department", "Old Position", "New Position", "Status"], tablefmt="double_grid"))
-
-            # Get valid JPCR IDs
-            valid_ids = [str(row[0]) for row in pending_requests]
-
-            # Ask for JPCR ID
-            jpcr_id = input("\nEnter JPCR ID to process (or 'exit' to return): ").strip()
-            if jpcr_id.lower() == "exit":
-                break
-            if jpcr_id not in valid_ids:
-                print(colored("\nInvalid JPCR ID. Please select a valid pending request.", "red"))
-                continue
-
-            # Get request details
-            cursor.execute("""
-                SELECT JP.emp_id, JP.new_position, JP.department
-                FROM Job_Position_Change_Request JP
-                WHERE JP.jpcr_id = ?
-            """, (jpcr_id,))
-            emp_id, new_position, department = cursor.fetchone()
-
-            # Approve or Reject
-            decision = input("Approve or Reject the request? (A/R): ").strip().upper()
-            if decision not in ["A", "R"]:
-                print(colored("\nInvalid choice! Enter 'A' for Approve or 'R' for Reject.", "red"))
-                continue
-
-            if decision == "A":  # Approve
-                # Update Employee position
-                cursor.execute("""
-                    UPDATE Employee
-                    SET position = ?
-                    WHERE emp_id = ?
-                """, (new_position, emp_id))
-
-                # Reduce job posting count
-                cursor.execute("""
-                    UPDATE Job_posting
-                    SET no_of_positions = no_of_positions - 1
-                    WHERE department = ? AND position = ? AND no_of_positions > 0
-                """, (department, new_position))
-
-                if cursor.rowcount == 0:
-                    print(colored("\nNo available positions left for this role. Approval failed.", "red"))
-                    continue
-
-                # Update status to APPROVED
-                cursor.execute("""
-                    UPDATE Job_Position_Change_Request
-                    SET status = 'APPROVED'
-                    WHERE jpcr_id = ?
-                """, (jpcr_id,))
-
-                print(colored("\nPosition change request APPROVED and updated successfully!", "green"))
-
-            else:  # Reject
-                cursor.execute("""
-                    UPDATE Job_Position_Change_Request
-                    SET status = 'REJECTED'
-                    WHERE jpcr_id = ?
-                """, (jpcr_id,))
-
-                print(colored("\nPosition change request REJECTED.", "yellow"))
-
-            conn.commit()
-
-        conn.close()
 # -----------------------------------------------------------------------------------------------------------------------------------
 
     def promote_employee_or_hr(self):

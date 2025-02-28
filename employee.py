@@ -38,9 +38,8 @@ class Employee:
             ["2", "Apply Leave"],
             ["3", "View Applied Leaves"],
             ["4", "Check Salary"],
-            ["5", "Request Job Position Change"],
-            ["6", "View & Update Your Profile"],
-            ["7", "Logout"]
+            ["5", "View & Update Your Profile"],
+            ["6", "Logout"]
         ]
         print(colored("\nEmployee Menu", "green", attrs=['bold']))
         print(tabulate(options, headers=[colored("Option", "cyan"), colored("Action", "yellow")], tablefmt="double_grid"))
@@ -156,49 +155,7 @@ class Employee:
         conn.close()
 # -----------------------------------------------------------------------------------------------------------------------------------
 
-    def request_job_position_change(self):
-        conn = sqlite3.connect(self.db)
-        cursor = conn.cursor()
 
-        # Fetch current employee's department and position
-        cursor.execute("SELECT department, position FROM Employee WHERE emp_id = ?", (self.emp_id,))
-        current_data = cursor.fetchone()
-        current_department, current_position = current_data
-
-        print(colored("\nYour Current Details:", "cyan"))
-        print(tabulate([[current_department, current_position]], headers=["Department", "Position"], tablefmt="double_grid"))
-
-        # Fetch job postings only from employee's department
-        cursor.execute("SELECT posting_id, department, position, no_of_positions FROM Job_posting WHERE department = ?", (current_department,))
-        job_postings = cursor.fetchall()
-
-        if not job_postings:
-            print(colored(f"\nNo job postings available in your department ({current_department}).", "red"))
-            conn.close()
-            return
-
-        print(colored(f"\nAvailable Job Postings in {current_department}:", "green"))
-        print(tabulate(job_postings, headers=["Posting ID", "Department", "Position", "No. of Positions"], tablefmt="double_grid"))
-
-        # Ask user for new position
-        new_position = input("\nEnter the new position you want to apply for: ").strip()
-
-        # Validate new_position exists in job postings for the employee's department
-        valid_positions = [job[2] for job in job_postings]
-        if new_position not in valid_positions:
-            print(colored("\nInvalid position! Choose a position from the available job postings in your department.", "red"))
-            conn.close()
-            return
-
-        # Insert into Job_Position_Change_Request table with 'PENDING' status
-        cursor.execute(
-            "INSERT INTO Job_Position_Change_Request (emp_id, department, old_position, new_position, status) VALUES (?, ?, ?, ?, ?)",
-            (self.emp_id, current_department, current_position, new_position, "PENDING")
-        )
-        conn.commit()
-        conn.close()
-
-        print(colored("\nJob Position Change Request Submitted Successfully! Status: PENDING", "green"))
 # -----------------------------------------------------------------------------------------------------------------------------------
 
     def view_and_update_profile(self):
@@ -263,10 +220,8 @@ class Employee:
             elif choice == "4":
                 self.check_salary()
             elif choice == "5":
-                self.request_job_position_change()
-            elif choice == "6":
                 self.view_and_update_profile()
-            elif choice == "7":
+            elif choice == "6":
                 print(colored("\nLogging out...", "cyan"))
                 break
             else:

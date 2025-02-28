@@ -12,13 +12,13 @@ def main():
         choice = input(colored("Enter your choice (1/2/3): ", "cyan")).strip()
         
         if choice == "1":
-            os.system('python hr.py')
+            os.system('python3 hr.py')
             break
         elif choice == "2":
-            os.system('python employee.py')
+            os.system('python3 employee.py')
             break
         elif choice == "3":
-            os.system('python manager.py')
+            os.system('python3 manager.py')
             break
         else:
             print(colored("Invalid choice! Please enter 1, 2, or 3.", "red"))

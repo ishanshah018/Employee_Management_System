@@ -39,10 +39,9 @@ class HR:
             ["2", "Manage Leaves of Employees"],
             ["3", "Manage Salary of Employees"],
             ["4", "Generate Salary Report"],
-            ["5", "Job Posting"],
-            ["6", "Employee Rating"],
-            ["7", "Employee Attendance Report"],
-            ["8", "Logout"]
+            ["5", "Employee Rating"],
+            ["6", "Employee Attendance Report"],
+            ["7", "Logout"]
         ]
         print(colored("\nHR Menu", "green", attrs=['bold']))
         print(tabulate(options, headers=[colored("Option", "cyan"), colored("Action", "yellow")], tablefmt="double_grid"))
@@ -581,52 +580,6 @@ class HR:
         conn.close()
 # -----------------------------------------------------------------------------------------------------------------------------------
 
-        # --------- Job Posting --------- #
-
-    def job_posting(self):
-        departments = ["IT", "Finance", "Marketing", "Operations"]
-        positions = {
-            "IT": ["Software Engineer", "Data Analyst", "System Admin", "Backend Developer", "QA Engineer"],
-            "Finance": ["Accountant", "Financial Analyst", "Auditor", "Finance Manager"],
-            "Marketing": ["Marketing Executive", "SEO Specialist", "Content Strategist", "Brand Manager"],
-            "Operations": ["Operations Manager", "Logistics Coordinator", "Inventory Manager", "Supply Chain Analyst"]
-        }
-
-        print(colored("\nAvailable Departments:", "green"))
-        print(tabulate([[d] for d in departments], headers=["Department"], tablefmt="double_grid"))
-
-        selected_department = input("\nSelect a department: ").strip()
-
-        if selected_department not in departments:
-            print(colored("\nInvalid department choice!", "red"))
-            return
-
-        print(colored(f"\nAvailable Positions in {selected_department}:", "cyan"))
-        print(tabulate([[p] for p in positions[selected_department]], headers=["Position"], tablefmt="double_grid"))
-
-        selected_position = input("\nSelect a position: ").strip()
-
-        if selected_position not in positions[selected_department]:
-            print(colored("\nInvalid position choice!", "red"))
-            return
-
-        no_of_positions = input("Enter the number of positions: ").strip()
-
-        if not no_of_positions.isdigit() or int(no_of_positions) <= 0:
-            print(colored("\nInvalid number of positions!", "red"))
-            return
-
-        # Insert into Job_posting table
-        conn = sqlite3.connect(self.db)
-        cursor = conn.cursor()
-        cursor.execute("""
-            INSERT INTO Job_posting (department, position, no_of_positions)
-            VALUES (?, ?, ?)
-        """, (selected_department, selected_position, no_of_positions))
-        conn.commit()
-        conn.close()
-
-        print(colored("\nJob posting added successfully!", "green"))
 # -----------------------------------------------------------------------------------------------------------------------------------
 
         # --------- Employee Rating --------- #
@@ -735,13 +688,11 @@ class HR:
             elif choice == "4":
                 self.generate_salary_report()
             elif choice == "5":
-                self.job_posting()
-            elif choice == "6":
                 self.employee_rating()
-            elif choice == "7":
+            elif choice == "6":
                 self.employee_attendance_report()
                 break
-            elif choice == "8":
+            elif choice == "7":
                 print(colored("\nLogging out...", "cyan"))
                 break
             else:
